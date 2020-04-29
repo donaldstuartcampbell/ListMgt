@@ -54,4 +54,32 @@ Module M_ListMgt
         r(7).msg = ss
         Return r
     End Function
+    Sub testing_DeletingRecord()
+        'startTime()
+
+        setPath2use()
+        Set_ApptTodoRecordType_UsingReader() 'sets: 1. array and 2. ApptGV.All_ApptTodoRecords_Cnt '0.2 seconds 3. does Sort based on dTics '.2323784 seconds
+        set_DeleteDateArray() 'should be called CompletedDateArray
+        'endTime() '.028 seconds
+
+        'startTime()
+        '================
+        Dim i As Integer
+        Dim completedDate As Date
+        Dim msg As String
+        For i = 1 To ApptGV.All_ApptTodoRecords_Cnt
+            With ApptGV.All_ApptTodoRecords(i)
+                completedDate = New Date(.dTicsCompleted)
+                msg = Replace(.Msg, vbNewLine, "^")
+                'Debug.Print(completedDate)
+                If .DeleteAbsolute = 1 Then
+                    Debug.Print(i & " " & .DeleteAbsolute & "=abs - " & .DeleteFlag & " del - comDate=" & completedDate & " -- " & .ApptDateStr & " " & msg)
+                Else
+                    Debug.Print(i & "         " & .DeleteFlag & " del - comDate=" & completedDate & " -- " & .ApptDateStr & " " & msg)
+                End If
+
+            End With
+        Next
+        'endTime()'.001 second
+    End Sub
 End Module

@@ -129,7 +129,7 @@
         Me.KeyPreview = True
 
 
-        Tb_Msg.MaxLength = 237 '84
+        Tb_Msg.MaxLength = 557 '237 '84
         _RetMessage = "" '"Nothing"
 
         '==
@@ -141,11 +141,13 @@
         CheckBox1.Checked = False
 
         _RetRolloverToCurrentMonth = False
-        CheckBox2.Checked = False
+        'CheckBox2.Checked = False
 
 
         If _AddingNewToDo = True Then
-            Panel2.Visible = False
+            B_OK.Text = "Add"
+
+            'Panel2.Visible = False
             Me.Text = "Adding New Todo"
             Lbl_AddingEditing.Text = "Enter Todo Message"
             _ReturnPutOnTop = False
@@ -154,17 +156,18 @@
             Panel1.Visible = True
             Tb_Msg.Text = ""
         Else
-
-            If _PassCanRollover = True Then
-                Panel2.Visible = True
-                Panel2.Location = Panel1.Location
-            Else
-                Panel2.Visible = False
-            End If
+            B_OK.Text = "Update"
+            'If _PassCanRollover = True Then
+            '    Panel2.Visible = True
+            '    Panel2.Location = Panel1.Location
+            'Else
+            '    Panel2.Visible = False
+            'End If
 
             Me.Text = "Editing Todo"
             Lbl_AddingEditing.Text = "Edit Todo Message"
-            Tb_Msg.Text = Mid(Trim(_PassMessage), 1, 237) ' 84)
+            'Tb_Msg.Text = Mid(Trim(_PassMessage), 1, 237) ' 84)
+            Tb_Msg.Text = Mid(Trim(_PassMessage), 1, 557) ' 84)
 
             Panel1.Visible = False
             With Tb_Msg
@@ -181,6 +184,8 @@
         Me.Show()
         Tb_Msg.Focus()
 
+        setFileSetName_BeingUsed() 'sets: ApptGV.nameOfFileSet_BeingUsed
+        Lbl_FileNameBeingUsed.Text = ApptGV.nameOfFileSet_BeingUsed
     End Sub
 
     'Private Sub Tb_Msg_KeyDown(sender As Object, e As KeyEventArgs) Handles Tb_Msg.KeyDown
@@ -198,9 +203,10 @@
         Me.Close()
     End Sub
     Private Sub retText()
-        _RetMessage = Trim(Mid(Trim(Tb_Msg.Text), 1, 237)) '84))
+        '_RetMessage = Trim(Mid(Trim(Tb_Msg.Text), 1, 237)) '84))
+        _RetMessage = Trim(Mid(Trim(Tb_Msg.Text), 1, 557)) '84))
         _ReturnPutOnTop = CheckBox1.Checked
-        _RetRolloverToCurrentMonth = CheckBox2.Checked
+        _RetRolloverToCurrentMonth = False 'CheckBox2.Checked
         Me.Close()
     End Sub
 
@@ -208,13 +214,115 @@
         Tb_Msg.Focus()
     End Sub
 
-    Private Sub CheckBox2_CheckedChanged(sender As Object, e As EventArgs) Handles CheckBox2.CheckedChanged
+    Private Sub CheckBox2_CheckedChanged(sender As Object, e As EventArgs)
         Tb_Msg.Focus()
     End Sub
 
     Private Sub F_AddTodo_KeyDown(sender As Object, e As KeyEventArgs) Handles MyBase.KeyDown
         If e.KeyCode = Keys.F2 Then
             retText()
+            'ElseIf e.Control And e.KeyCode = Keys.A Then 'this works!
+            '    'If e.KeyCode = Keys.D AndAlso e.Modifiers.ControlKey = Keys.Control Then
+            '    'insert date into text
+            '    'MsgBox("CTRL + A Pressed !")
+            '    AddTodoRecord()
+        ElseIf e.KeyCode = Keys.Escape Then
+            e.SuppressKeyPress = True
+            Me.Close()
         End If
+    End Sub
+
+    Private Sub Tb_Msg_KeyDown(sender As Object, e As KeyEventArgs) Handles Tb_Msg.KeyDown
+
+        If e.Control And e.KeyCode = Keys.D Then 'this works!
+            'Dim d As Date = Date.Today
+            'Dim dd As String = CStr(d) ' & " "
+            Dim dd As String = Format(Date.Today, "M-d-yyyy")
+            'Dim dd As String = Format(Date.Today, "M-d-yy")
+
+            'Dim xInstr As Integer = InStrRev(dd, "-")
+            'Mid(dd, xInstr, 1) = " '" & Mid(dd, xInstr + 1)
+            'dd = Mid(dd, 1, xInstr - 1) & "-'" & Mid(dd, xInstr + 1)
+
+
+            Dim index As Integer = Tb_Msg.SelectionStart
+            If Tb_Msg.Text.Length > index Then
+                dd &= " "
+            End If
+            'If e.KeyCode = Keys.D AndAlso e.Modifiers.ControlKey = Keys.Control Then
+            'insert date into text
+            'MsgBox("CTRL + D Pressed !")
+            Tb_Msg.SelectedText = dd
+            Tb_Msg.SelectionStart = Index + dd.Length ' Tb_Msg.Text.Length
+            e.SuppressKeyPress = True
+        ElseIf e.Control And e.KeyCode = Keys.t Then 'this works!
+
+            Dim dd As String = Format(Date.Now, "M-d-yyyy h:mm tt")
+            Dim index As Integer = Tb_Msg.SelectionStart
+            If Tb_Msg.Text.Length > index Then
+                dd &= " "
+            End If
+            'If e.KeyCode = Keys.D AndAlso e.Modifiers.ControlKey = Keys.Control Then
+            'insert date into text
+            'MsgBox("CTRL + D Pressed !")
+            Tb_Msg.SelectedText = dd
+            Tb_Msg.SelectionStart = index + dd.Length ' Tb_Msg.Text.Length
+            e.SuppressKeyPress = True
+
+
+
+        End If
+    End Sub
+
+    Private Sub InsertTodaysDateAndTimeToolStripMenuItem_Click(sender As Object, e As EventArgs) Handles InsertTodaysDateAndTimeToolStripMenuItem.Click
+        insertDateTime()
+    End Sub
+    Private Sub insertDateTime()
+        Dim dd As String = Format(Date.Now, "M-d-yyyy h:mm tt")
+        Dim index As Integer = Tb_Msg.SelectionStart
+        If Tb_Msg.Text.Length > index Then
+            dd &= " "
+        End If
+        'If e.KeyCode = Keys.D AndAlso e.Modifiers.ControlKey = Keys.Control Then
+        'insert date into text
+        'MsgBox("CTRL + D Pressed !")
+        Tb_Msg.SelectedText = dd
+        Tb_Msg.SelectionStart = index + dd.Length ' Tb_Msg.Text.Length
+        'e.SuppressKeyPress = True
+        Tb_Msg.Focus()
+
+    End Sub
+    Private Sub ExitToolStripMenuItem1_Click(sender As Object, e As EventArgs) Handles ExitToolStripMenuItem1.Click
+        _RetMessage = ""
+        Me.Close()
+    End Sub
+
+    Private Sub AddOrUpdateToolStripMenuItem_Click(sender As Object, e As EventArgs) Handles AddOrUpdateToolStripMenuItem.Click
+        retText()
+    End Sub
+
+    Private Sub InsertTodaysDateToolStripMenuItem_Click(sender As Object, e As EventArgs) Handles InsertTodaysDateToolStripMenuItem.Click
+        insertDate()
+    End Sub
+    Private Sub insertDate()
+        Dim dd As String = Format(Date.Today, "M-d-yyyy")
+        'Dim dd As String = Format(Date.Today, "M-d-yy")
+
+        'Dim xInstr As Integer = InStrRev(dd, "-")
+        'Mid(dd, xInstr, 1) = " '" & Mid(dd, xInstr + 1)
+        'dd = Mid(dd, 1, xInstr - 1) & "-'" & Mid(dd, xInstr + 1)
+
+
+        Dim index As Integer = Tb_Msg.SelectionStart
+        If Tb_Msg.Text.Length > index Then
+            dd &= " "
+        End If
+        'If e.KeyCode = Keys.D AndAlso e.Modifiers.ControlKey = Keys.Control Then
+        'insert date into text
+        'MsgBox("CTRL + D Pressed !")
+        Tb_Msg.SelectedText = dd
+        Tb_Msg.SelectionStart = index + dd.Length ' Tb_Msg.Text.Length
+        'e.SuppressKeyPress = True
+        Tb_Msg.Focus()
     End Sub
 End Class

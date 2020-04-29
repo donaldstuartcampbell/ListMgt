@@ -9,28 +9,57 @@ Public Class F_Reorg
 
     Dim skip As Boolean = True
     Dim formOrigWidth As Single
+    Dim formOrigHeight As Single
+    Dim origSize As Point
+    Dim dticsArray() As Long
+    Dim nRecords As Integer = 0
 
+    'Dim PreviousWindowState As FormWindowState
     Private Sub F_Reorg_Load(sender As Object, e As EventArgs) Handles MyBase.Load
         Me.Left = 0
         Me.Top = 0
         Static firstTimeIn As Boolean = True
         If firstTimeIn = True Then
             'Me.Width = Screen.PrimaryScreen.WorkingArea.Width
-            Me.Height = 325 'Screen.PrimaryScreen.WorkingArea.Height
+            'Me.Height = 325 'Screen.PrimaryScreen.WorkingArea.Height
+            Me.Height = Screen.PrimaryScreen.WorkingArea.Height
 
             Me.MinimumSize = Me.Size
+
+            origSize = New Point(Me.Size)
 
             firstTimeIn = False
             skip = True
             initGrid()
 
             formOrigWidth = Me.Width
+            formOrigHeight = Me.Width
+            DataGridView1.Columns(1).DefaultCellStyle.Font = New Font("microsoft sans serif", 10, FontStyle.Regular)
+
+            'Me.MaximizeBox = False
+            Me.MinimizeBox = False
+
+
             skip = False
         Else
-            Me.WindowState = FormWindowState.Normal
-            Me.Size = Me.MinimumSize
+            'Me.Width = formOrigWidth
+            'Me.WindowState = FormWindowState.Normal
+            'Me.Size = Me.MinimumSize
+
+            'Me.Size = origSize 'New Size(800, 200)
+            'Me.Size = New Size(formOrigWidth, formOrigHeight)
+            'Me.WindowState = FormWindowState.Normal
         End If
+        ApptGV.Use_ApptTodoRecords = getDeletedTodos_withinDateRange_NEW(New Date(0)) '(New Date(ApptGV.todoTicks)) '(selDate, True)
+        nRecords = UBound(ApptGV.Use_ApptTodoRecords)
+        QuickSort_ApptTodoRecords(ApptGV.Use_ApptTodoRecords, 1, nRecords)
+
+        ReDim dticsArray(nRecords)
+
         setValues()
+
+        setFileSetName_BeingUsed() 'sets: ApptGV.nameOfFileSet_BeingUsed
+        Lbl_FileNameBeingUsed.Text = ApptGV.nameOfFileSet_BeingUsed
     End Sub
     'Class SurroundingClass
     Private Sub dataGridView1_MouseMove(ByVal sender As Object, ByVal e As MouseEventArgs) Handles DataGridView1.MouseMove
@@ -67,7 +96,7 @@ Public Class F_Reorg
             If TargetRowIndex <> -1 Then
                 If TargetRowIndex = rowIndexFromMouseDown Then Exit Sub
 
-                Debug.Print(TargetRowIndex & " drag over " & rowIndexFromMouseDown)
+                'Debug.Print(TargetRowIndex & " drag over " & rowIndexFromMouseDown)
                 EnsureVisibleRow(DataGridView1, TargetRowIndex)
 
                 'Debug.Print(TargetRowIndex & " drag over " & rowIndexFromMouseDown)
@@ -232,37 +261,23 @@ Public Class F_Reorg
         Dim msg As String
         DataGridView1.Rows.Clear()
 
-        For i = 1 To ApptGV.All_ApptTodoRecords_Cnt
+        Dim nRecs As Integer = UBound(ApptGV.Use_ApptTodoRecords)
+        For i = 1 To nRecs 'ApptGV.All_ApptTodoRecords_Cnt
 
             'DataGridView1.Rows.Add(i.ToString("0000"), i Mod 2, TextBox1.Text, "Edit", "Delete")
             'With ApptGV.All_ApptTodoRecords(i)
             With ApptGV.Use_ApptTodoRecords(i)
                 'DataGridView1.Rows.Add(.RecNumber.ToString, .Completed, .msg, "Edit", "Delete")
                 msg = TrimF(.Msg)
-                DataGridView1.Rows.Add(i.ToString, .DeleteFlag, msg, "Edit", "Delete")
-
+                'DataGridView1.Rows.Add(i.ToString, .DeleteFlag, msg, "Edit", "Delete")
+                'DataGridView1.Rows.Add(i.ToString, .DeleteFlag, msg)
+                DataGridView1.Rows.Add(i.ToString, msg)
+                'formatApptTodoDateStr()
             End With
         Next
-        setValues_LB1()
+        'setValues_LB1()
     End Sub
-    Private Sub setValues_LB1()
-        Dim i As Integer
-        Dim msg As String
-        ListBox1.Items.Clear()
 
-        For i = 1 To ApptGV.All_ApptTodoRecords_Cnt
-
-            'DataGridView1.Rows.Add(i.ToString("0000"), i Mod 2, TextBox1.Text, "Edit", "Delete")
-            'With ApptGV.All_ApptTodoRecords(i)
-            With ApptGV.Use_ApptTodoRecords(i)
-                'DataGridView1.Rows.Add(.RecNumber.ToString, .Completed, .msg, "Edit", "Delete")
-                msg = TrimF(.Msg)
-                ListBox1.Items.Add(i & vbTab & .dTics Mod 10000000 & vbTab & .DeleteFlag & vbTab & msg)
-
-            End With
-        Next
-
-    End Sub
 
 
     Private Shared Sub EnsureVisibleRow(ByVal view As DataGridView, ByVal rowToShow As Integer)
@@ -294,7 +309,7 @@ Public Class F_Reorg
     End Sub
     Private Sub F_Main_Resize(sender As Object, e As EventArgs) Handles MyBase.Resize
         If skip Then Exit Sub
-        DataGridView1.Columns(2).Width = 500 + (Me.Width - formOrigWidth)
+        DataGridView1.Columns(1).Width = 600 + (Me.Width - formOrigWidth)
 
 
 
@@ -304,7 +319,7 @@ Public Class F_Reorg
         Debug.Print(Me.Height & " " & s)
         DataGridView1.Columns(0).DefaultCellStyle.Font = New Font("microsoft sans serif", s, FontStyle.Regular)
         'DataGridView1.Columns(1).DefaultCellStyle.Font = New Font("microsoft sans serif", s, FontStyle.Regular)
-        DataGridView1.Columns(2).DefaultCellStyle.Font = New Font("microsoft sans serif", s, FontStyle.Regular)
+        DataGridView1.Columns(1).DefaultCellStyle.Font = New Font("microsoft sans serif", s, FontStyle.Regular)
     End Sub
 
     'Private Sub DataGridView1_MouseHover(sender As Object, e As EventArgs) Handles DataGridView1.MouseHover
@@ -361,36 +376,127 @@ Public Class F_Reorg
 
     Private Sub B_Update_Click(sender As Object, e As EventArgs) Handles B_Update.Click
         Dim i As Integer
+        Dim LocInArray(nRecords) As Integer
+        For i = 1 To nRecords
+            dticsArray(i) = ApptGV.Use_ApptTodoRecords(i).dTics
 
-        For i = 1 To ApptGV.All_ApptTodoRecords_Cnt
+            LocInArray(i) = biSearch_GTE_ApptTodoRecords(dticsArray(i))
 
+            'dticsArray(i) = ApptGV.Use_ApptTodoRecords(DataGridView1.Rows(i - 1).Cells(0).Value).dTics
+            'With ApptGV.Use_ApptTodoRecords(i)
+            '    Debug.Print(.Msg & " " & .dTics & " " & .ApptDateStr)
+            'End With
+            'Debug.Print(DataGridView1.Rows(i - 1).Cells(0).Value & " " & ApptGV.Use_ApptTodoRecords(i).dTics & " " & ApptGV.Use_ApptTodoRecords(DataGridView1.Rows(i - 1).Cells(0).Value).dTics)
+        Next
+
+        Dim xLoc As Integer = 0
+        For i = 1 To nRecords
+            xLoc = DataGridView1.Rows(i - 1).Cells(0).Value
+            'Debug.Print(i & " " & xLoc)
+            With ApptGV.All_ApptTodoRecords(LocInArray(xLoc))
+                .dTics = dticsArray(i)
+                .ApptDateStr = formatApptTodoDateStr(.dTics)
+            End With
+        Next
+
+
+        For i = 1 To nRecords
+            'With ApptGV.Use_ApptTodoRecords(i)
             With ApptGV.Use_ApptTodoRecords(DataGridView1.Rows(i - 1).Cells(0).Value)
-                .dTics = ApptGV.All_ApptTodoRecords(i).dTics
-                '(.dTics \ TimeSpan.TicksPerDay) * TimeSpan.TicksPerDay + i
+
+                'LocInArray = biSearch_GTE_ApptTodoRecords(.dTics)
+                'ApptGV.All_ApptTodoRecords(LocInArray).dTics = dticsArray(i)
+                'ApptGV.All_ApptTodoRecords(LocInArray).ApptDateStr = formatApptTodoDateStr(.dTics)
+
+                .dTics = dticsArray(i)
+                .ApptDateStr = formatApptTodoDateStr(.dTics)
+                'Debug.Print(.Msg & " " & .dTics & " " & .ApptDateStr)
             End With
         Next
-        'QuickSort_ApptRecType_dTics((ApptGV.Use_ApptTodoRecords, 1, ApptGV.All_ApptTodoRecords_Cnt)
-        QuickSort_ApptTodoRecords(ApptGV.Use_ApptTodoRecords, 1, ApptGV.All_ApptTodoRecords_Cnt)
 
-        ApptGV.All_ApptTodoRecords = ApptGV.Use_ApptTodoRecords.Clone
+        'For i = 1 To nRecords
+        '    LocInArray = biSearch_GTE_ApptTodoRecords(dticsArray(i))
+        '    With ApptGV.All_ApptTodoRecords(LocInArray)
+        '        '.dTics = dticsArray(i)
+        '        '.ApptDateStr = formatApptTodoDateStr(.dTics)
+        '        'Debug.Print(.dTics)
+        '        .dTics = ApptGV.Use_ApptTodoRecords(i).dTics
+        '        .ApptDateStr = formatApptTodoDateStr(.dTics)
+        '        Debug.Print(.dTics)
+        '        'Debug.Print(.Msg)
+        '    End With
+        'Next
 
-        setValues()
-        setValues_LB2()
-    End Sub
-    Private Sub setValues_LB2()
-        Dim i As Integer
-        Dim msg As String
-        ListBox2.Items.Clear()
 
-        For i = 1 To ApptGV.All_ApptTodoRecords_Cnt
+        'Now save records in file
+        '===========NEW
+        Dim ff As Integer = FreeFile()
+        Dim filename As String = xBuildFullFileName(file_ListMgt.FileName)
+        FileOpen(ff, filename, OpenMode.Random, , , file_ListMgt.FileLen)
 
+        'Dim xCount As Integer = LOF(ff) / file_ListMgt.FileLen + 1
+
+        Dim id As Integer
+        For i = 1 To nRecords
             With ApptGV.Use_ApptTodoRecords(i)
-                'DataGridView1.Rows.Add(.RecNumber.ToString, .Completed, .msg, "Edit", "Delete")
-                msg = TrimF(.Msg)
-                'ListBox2.Items.Add(i.ToString & vbTab & .DeleteFlag & vbTab & msg)
-                ListBox2.Items.Add(i & vbTab & .dTics Mod 10000000 & vbTab & .DeleteFlag & vbTab & msg)
+                id = .ID
+                FilePut(ff, ApptGV.Use_ApptTodoRecords(i), id)
             End With
         Next
+        FileClose(ff)
+        '===========
+
+
+        'Set_ApptTodoRecordType_UsingReader()
+        'Note: if not sure of "ApptGV.All_ApptTodoRecords" being populated correctly use SET... above
+        'o/w use QuickSort... below
+
+        QuickSort_ApptTodoRecords(ApptGV.All_ApptTodoRecords, 1, ApptGV.All_ApptTodoRecords_Cnt)
+
+        set_DeleteDateArray() 'should be called CompletedDateArray
+
+        Me.Close()
+
+
+        'For i = 1 To ApptGV.All_ApptTodoRecords_Cnt
+
+        '    With ApptGV.Use_ApptTodoRecords(DataGridView1.Rows(i - 1).Cells(0).Value)
+        '        .dTics = ApptGV.All_ApptTodoRecords(i).dTics
+        '        '(.dTics \ TimeSpan.TicksPerDay) * TimeSpan.TicksPerDay + i
+        '    End With
+        'Next
+        ''QuickSort_ApptRecType_dTics((ApptGV.Use_ApptTodoRecords, 1, ApptGV.All_ApptTodoRecords_Cnt)
+        'QuickSort_ApptTodoRecords(ApptGV.Use_ApptTodoRecords, 1, ApptGV.All_ApptTodoRecords_Cnt)
+
+        'ApptGV.All_ApptTodoRecords = ApptGV.Use_ApptTodoRecords.Clone
+
+        'setValues()
+        'setValues_LB2()
+    End Sub
+
+    Private Sub B_ExitWithoutUpdate_Click(sender As Object, e As EventArgs) Handles B_ExitWithoutUpdate.Click
+        Me.Close()
 
     End Sub
+
+    Private Sub F_Reorg_FormClosing(sender As Object, e As FormClosingEventArgs) Handles MyBase.FormClosing
+        Me.Size = origSize
+        'Me.WindowState = FormWindowState.Minimized
+        ' e.Cancel = True
+        'Me.formOrigHeight = FormWindowState.Normal
+        'Me.formOrigWidth = FormWindowState.Normal
+
+        Me.WindowState = FormWindowState.Normal
+
+    End Sub
+    'Private Sub MotionManagerDialog_Resize(ByVal sender As Object, ByVal e As System.EventArgs) Handles Me.SizeChanged
+    '    If skip Then Exit Sub
+
+
+    '    If Me.Bounds.Equals(Me.RestoreBounds) And Not PreviousWindowState.Equals(Nothing) And
+    '                        PreviousWindowState.Equals(System.Windows.Forms.FormWindowState.Maximized) Then
+    '        ' Captures restore down action
+    '    End If
+    '    PreviousWindowState = Me.WindowState
+    'End Sub
 End Class

@@ -929,29 +929,71 @@ Module Mod_Todo_ProductionMode
         Return a
 
     End Function
+    Function getDeletedTodos_DeletedToday(Optional ByVal ReverseDateOrder As Boolean = False) As ApptTodoRecordType()
 
-    Function getDeletedTodos_withinDateRange_NEW(ByVal sDate As Date, Optional ByVal ReverseDateOrder As Boolean = False) As ApptTodoRecordType()
         Dim cnt As Integer = 0
         Dim i As Integer
-        Dim s As Long = sDate.Ticks
+        Dim d As Date = Date.Today
+        Dim xday As Integer = d.Day
+        Dim s As Long = getFirstOfMonthTicks(d.Ticks)
 
-        Dim startPt As Integer = biSearch_GTE_TodoCreateDates(s)
-        Dim endPt As Integer = biSearch_GTE_TodoCreateDates(s + TimeSpan.TicksPerDay)
+        Dim startPt As Integer = biSearch_GTE_TodoCompletedDates(s)
+        Dim endPt As Integer = biSearch_GTE_TodoCompletedDates(s + TimeSpan.TicksPerDay)
         Dim nRecs As Integer = endPt - startPt
 
         Dim a(nRecs) As ApptTodoRecordType
         For i = startPt To endPt - 1
 
-            With ApptGV.All_ApptTodoRecords(ApptGV.TodoCreateDate(i).i)
-                If .DeleteFlag = 1 Then
+            With ApptGV.All_ApptTodoRecords(ApptGV.TodoCompletedDate(i).i)
+                If New Date(.dTicsCompleted).Day = xday Then
+                    'If .DeleteFlag = 1 Then
+                    'note: these are all completed items so no need to test for being deleted!
+
                     'Debug.Print(cnt & " " & New Date(ApptGV.TodoCreateDate(i).L) & " " & " " & New Date(.dTicsOriginal) & " " & .Msg & " " & .DeleteFlag & " " & New Date(.dTicsCompleted))
                     cnt += 1
-                    a(cnt) = ApptGV.All_ApptTodoRecords(ApptGV.TodoCreateDate(i).i)
+                    a(cnt) = ApptGV.All_ApptTodoRecords(ApptGV.TodoCompletedDate(i).i)
                     a(cnt).Msg = Trim(a(cnt).Msg)
                 End If
             End With
         Next
-        ReDim Preserve a(Math.Min(ApptGV.MaxApptTodos, cnt))
+        'ReDim Preserve a(Math.Min(ApptGV.MaxApptTodos, cnt))
+        ReDim Preserve a(cnt)
+        'QuickSort_ApptTodoRecords(a, 1, UBound(a))
+        If ReverseDateOrder = False Then
+            QuickSort_ApptTodoRecords_bydTicsCompleted(a, 1, UBound(a))
+        Else
+            QuickSort_ApptTodoRecords_descending_bydTicsCompleted(a, 1, UBound(a))
+        End If
+
+        Return a
+
+    End Function
+    Function getDeletedTodos_withinDateRange_NEW(ByVal sDate As Date, Optional ByVal ReverseDateOrder As Boolean = False) As ApptTodoRecordType()
+        Debug.Print(sDate)
+        Dim cnt As Integer = 0
+        Dim i As Integer
+        Dim s As Long = sDate.Ticks
+
+        Dim startPt As Integer = biSearch_GTE_TodoCompletedDates(s)
+        Dim endPt As Integer = biSearch_GTE_TodoCompletedDates(s + TimeSpan.TicksPerDay)
+        Dim nRecs As Integer = endPt - startPt
+
+        Dim a(nRecs) As ApptTodoRecordType
+        For i = startPt To endPt - 1
+
+            With ApptGV.All_ApptTodoRecords(ApptGV.TodoCompletedDate(i).i)
+                'If .DeleteFlag = 1 Then
+                'note: these are all completed items so no need to test for being deleted!
+
+                'Debug.Print(cnt & " " & New Date(ApptGV.TodoCreateDate(i).L) & " " & " " & New Date(.dTicsOriginal) & " " & .Msg & " " & .DeleteFlag & " " & New Date(.dTicsCompleted))
+                cnt += 1
+                a(cnt) = ApptGV.All_ApptTodoRecords(ApptGV.TodoCompletedDate(i).i)
+                a(cnt).Msg = TrimF(a(cnt).Msg)
+                'End If
+            End With
+        Next
+        'ReDim Preserve a(Math.Min(ApptGV.MaxApptTodos, cnt))
+        ReDim Preserve a(cnt)
         'QuickSort_ApptTodoRecords(a, 1, UBound(a))
         If ReverseDateOrder = False Then
             QuickSort_ApptTodoRecords_bydTicsCompleted(a, 1, UBound(a))

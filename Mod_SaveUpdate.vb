@@ -170,11 +170,14 @@ Module Mod_SaveUpdate
         ReDim Preserve ApptGV.All_ApptTodoRecords(xCount)
         ApptGV.All_ApptTodoRecords(xCount) = rec
 
-        If ExitAfterAdd = True Then Exit Sub
+        'If ExitAfterAdd = True Then Exit Sub
+        If ExitAfterAdd = False Then
+            QuickSort_ApptTodoRecords(ApptGV.All_ApptTodoRecords, 1, ApptGV.All_ApptTodoRecords_Cnt)
+            'set_CreateDateArray() '0.007 seconds
 
+            set_DeleteDateArray()
 
-        QuickSort_ApptTodoRecords(ApptGV.All_ApptTodoRecords, 1, ApptGV.All_ApptTodoRecords_Cnt)
-        set_CreateDateArray() '0.007 seconds
+        End If
 
 
 

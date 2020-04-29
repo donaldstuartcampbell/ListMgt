@@ -36,7 +36,8 @@ Module M_ListMgt_Files
         '<VBFixedString(84)> Dim Msg As String
 
         '/ListMgt/
-        <VBFixedString(237)> Dim Msg As String
+        '<VBFixedString(237)> Dim Msg As String
+        <VBFixedString(557)> Dim Msg As String
 
         Dim AcctNum As Integer
         Dim StrikeOut As Integer
@@ -69,8 +70,13 @@ Module M_ListMgt_Files
     'End Structure
     Structure file_ListMgt
         Public Shared FileName = "ListMgt.fil"
-        Public Shared FileLen = 320
+        Public Shared FileLen = 640 '320
     End Structure
+    Structure file_ListMgt640
+        Public Shared FileName = "ListMgt640.fil"
+        Public Shared FileLen = 640
+    End Structure
+
     Structure file_Birthday
         Public Shared FileName = "Birthday.Fil"
         Public Shared FileLen = 130
@@ -362,6 +368,23 @@ Module M_ListMgt_Files
         Loop While Low <= High
         If First < High Then QuickSort_ApptTodoRecords(c, First, High)
         If Low < Last Then QuickSort_ApptTodoRecords(c, Low, Last)
+    End Sub
+    Sub QuickSort_ApptTodoRecords_desc(ByRef c() As ApptTodoRecordType, ByVal First As Integer, ByVal Last As Integer) 'works very well! - eliminates calling the swap routine dsc - 20140627
+        'new Oct 1 2019
+        If First >= Last Then Exit Sub
+
+        Dim Low, High As Integer 'Long 'Always Integer or Long
+        Dim MidValue As Long 'Integer
+        Dim T As ApptTodoRecordType 'LongIntegerType
+
+        Low = First : High = Last : MidValue = c((Low + High) \ 2).dTics
+        Do
+            While (c(Low).dTics > MidValue) : Low += 1 : End While
+            While (c(High).dTics < MidValue) : High -= 1 : End While
+            If Low <= High Then T = c(Low) : c(Low) = c(High) : c(High) = T : Low += 1 : High -= 1
+        Loop While Low <= High
+        If First < High Then QuickSort_ApptTodoRecords_desc(c, First, High)
+        If Low < Last Then QuickSort_ApptTodoRecords_desc(c, Low, Last)
     End Sub
     Sub test_QuickSort_ApptTodoRecords_bydTicsCompleted()
         Dim L As Long = #10/1/2019#.Ticks
@@ -1601,10 +1624,12 @@ Module M_ListMgt_Files
         Dim cntTodo As Integer = 0
 
         Dim FullFileName As String = xBuildFullFileName(file_ListMgt.FileName)
+        'Dim FullFileName As String = xBuildFullFileName(file_ListMgt640.FileName)
 
         Using reader As New BinaryReader(File.Open(FullFileName, FileMode.Open)) ' Loop through length of file.
             Dim length As Integer = reader.BaseStream.Length
             NumRecs = length / file_ListMgt.FileLen
+            'NumRecs = length / file_ListMgt640.FileLen
 
             ReDim ApptGV.TodoCreateDate(NumRecs)
 
@@ -1614,6 +1639,7 @@ Module M_ListMgt_Files
 
             'new
             ReDim ApptGV.distinctDates(NumRecs)
+            'startTime()
 
             For i = 1 To NumRecs
                 With ApptGV.All_ApptTodoRecords(i)
@@ -1622,7 +1648,13 @@ Module M_ListMgt_Files
 
                     '.Msg = reader.ReadChars(84)
                     '/ListMgt/
-                    .Msg = reader.ReadChars(237)
+                    '.Msg = reader.ReadChars(237) '557
+                    .Msg = reader.ReadChars(557)
+
+                    Dim msg As String
+                    msg = TrimF(.Msg)
+                    ' Debug.Print(Len(msg) & vbNewLine & msg)
+
 
                     .AcctNum = reader.ReadInt32
                     .StrikeOut = reader.ReadInt32
@@ -1647,7 +1679,9 @@ Module M_ListMgt_Files
                     '===
                     'If .Msg = "test adding todo for noDate //" Then
                     'If InStr(.Msg, "test adding todo for noDate //") > 0 Then
-                    '    Debug.Print(Trim(.Msg) & " " & i & " " & .ApptDateStr & " " & .DeleteFlag & " " & New Date(.dTicsOriginal))
+                    'Dim xMsg As String = Replace(TrimF(.Msg), vbNewLine, "/\")
+                    'Debug.Print(Trim(.Msg) & " " & i & " " & .ApptDateStr & " " & .DeleteFlag & " " & New Date(.dTicsOriginal))
+                    'Debug.Print(Trim(.ID & " " & .dTics & " " & xMsg & " " & i & " " & .ApptDateStr & " " & .DeleteFlag & " " & New Date(.dTicsOriginal)))
                     '    i = i
                     'End If
                     '===
@@ -1672,6 +1706,103 @@ Module M_ListMgt_Files
                 End With
             Next
         End Using
+        'endTime()
+
+        ''++create new larger file
+        '=========0.0957441 seconds
+        'Dim ff As Integer = FreeFile()
+
+        'Dim filename As String = xBuildFullFileName(file_ListMgt640.FileName)
+        'Kill(filename)
+        'createFileTDP(FullFileName)
+        'FileOpen(ff, filename, OpenMode.Random, , , file_ListMgt640.FileLen)
+        ''==
+        'cnt = 0
+        ''Dim j As Integer
+
+        'For i = 1 To NumRecs
+        '    cnt += 1
+        '    ApptGV.All_ApptTodoRecords(i).Msg = TrimF(ApptGV.All_ApptTodoRecords(i).Msg)
+        '    FilePut(ff, ApptGV.All_ApptTodoRecords(i), cnt) 'posInFile)
+        'Next
+
+
+        'FileClose(ff)
+        'Debug.Print("done!")
+        'End
+        '=========
+        'FullFileName = xBuildFullFileName(file_ListMgt640.FileName)
+        'createFileTDP(FullFileName)
+        'Using writer As New BinaryWriter(File.Open(FullFileName, FileMode.Open)) ' Loop through length of file.
+        '    'Dim length As Integer = reader.BaseStream.Length
+        '    'NumRecs = length / file_ListMgt640.FileLen
+
+        '    For i = 1 To NumRecs
+        '        With ApptGV.All_ApptTodoRecords(i)
+        '            writer.Write(.ID)
+        '            writer.Write(.dTics)
+        '            writer.Write(.Msg)
+        '            writer.Write(.AcctNum)
+
+        '            writer.Write(.StrikeOut)
+        '            writer.Write(.DeleteFlag)
+
+        '            writer.Write(.DeleteAbsolute)
+        '            writer.Write(.scUserID)
+        '            writer.Write(.ApptDateStr)
+        '            writer.Write(.apptDate)
+        '            writer.Write(.dTicsOriginal)
+        '            writer.Write(.dTicsCompleted)
+
+        '            '.ID = reader.ReadInt32
+        '            '.dTics = reader.ReadInt64
+
+        '            ''.Msg = reader.ReadChars(84)
+        '            ''/ListMgt/
+        '            '.Msg = reader.ReadChars(237) '557
+
+        '            '.AcctNum = reader.ReadInt32
+        '            '.StrikeOut = reader.ReadInt32
+        '            '.DeleteFlag = reader.ReadInt32
+        '            '.DeleteAbsolute = reader.ReadInt32
+        '            '.scUserID = reader.ReadInt32
+        '            '.ApptDateStr = reader.ReadChars(27)
+
+
+
+        '            ''.apptDate = (.dTics \ TimeSpan.TicksPerDay) * TimeSpan.TicksPerDay 'xDate 'CDate(Mid(.apptDate, 1, 10)) 'CDate(.apptDate) 'Date.Today.Date '.apptDate
+        '            '.apptDate = reader.ReadInt64
+
+        '            ''new
+        '            ''ApptGV.distinctDates(i) = (.dTics \ TimeSpan.TicksPerMinute) * TimeSpan.TicksPerMinute '.apptDate
+
+        '            '.dTicsOriginal = reader.ReadInt64
+        '            '.dTicsCompleted = reader.ReadInt64
+        '        End With
+        '    Next
+
+        'End Using
+        'End
+        ''================
+        'Fix===
+        'For i = 1 To NumRecs
+        '    With ApptGV.All_ApptTodoRecords(i)
+        '        If (.dTics \ TimeSpan.TicksPerDay) = 0 Then
+
+        '            .dTics = ApptGV.todoTicks + i
+        '            .ApptDateStr = formatApptTodoDateStr(.dTics)
+        '            .apptDate = createPureDate_Ticks_FromTicks(.dTics)
+
+        '            Dim xMsg As String = Replace(TrimF(.Msg), vbNewLine, "/\")
+
+        '            'Debug.Print(.ID & " " & Trim(.dTics & " " & xMsg & " " & i & " " & .ApptDateStr & " " & .DeleteFlag & " " & New Date(.dTicsOriginal)))
+        '            putApptTodoRecord(ApptGV.All_ApptTodoRecords(i))
+        '        End If
+
+        '    End With
+        'Next
+        'Fix===End
+
         ApptGV.All_ApptTodoRecords_Cnt = NumRecs
         'For i = ApptGV.All_ApptTodoRecords_Cnt To ApptGV.All_ApptTodoRecords_Cnt - 8 Step -1
         '    With ApptGV.All_ApptTodoRecords(i)
@@ -1784,6 +1915,55 @@ Module M_ListMgt_Files
         'Next
         'endTime()
     End Sub
+    Sub set_DeleteDateArray() 'to be run after Set_ApptTodoRecordType_UsingReader - and sorted
+        'startTime()
+
+        Dim sPoint As Integer = biSearch_GTE_ApptTodoRecords(ApptGV.todoTicks)
+        Dim ePoint As Integer = biSearch_GTE_ApptTodoRecords(ApptGV.todoTicks + TimeSpan.TicksPerDay) 'TimeSpan.TicksPerMinute)
+        Dim nItems As Integer = ePoint - sPoint
+        Dim cnt As Integer = 0
+        ReDim ApptGV.TodoCompletedDate(nItems)
+        Dim i As Integer
+        'Dim LL As Long
+        For i = sPoint To ePoint - 1
+            cnt += 1
+            With ApptGV.TodoCompletedDate(cnt)
+                '.L = (ApptGV.All_ApptTodoRecords(i).dTicsOriginal \ TimeSpan.TicksPerDay) * TimeSpan.TicksPerDay + (ApptGV.All_ApptTodoRecords(i).dTics - ApptGV.All_ApptTodoRecords(i).apptDate)
+                '.L = getFirstOfMonthTicks(ApptGV.All_ApptTodoRecords(i).dTicsCompleted + (ApptGV.All_ApptTodoRecords(i).dTics - ApptGV.All_ApptTodoRecords(i).apptDate))
+                '.L = getFirstOfMonthTicks(ApptGV.All_ApptTodoRecords(i).dTicsCompleted) + (ApptGV.All_ApptTodoRecords(i).dTics - ApptGV.All_ApptTodoRecords(i).apptDate)
+
+                .L = getFirstOfMonthTicks(ApptGV.All_ApptTodoRecords(i).dTicsCompleted) + ApptGV.All_ApptTodoRecords(i).dTics Mod TimeSpan.TicksPerSecond
+                'Debug.Print(.L)
+                'Debug.Print(ApptGV.All_ApptTodoRecords(i).dTics - ApptGV.All_ApptTodoRecords(i).apptDate)
+                ''''.L = getFirstOfMonthTicks(ApptGV.All_ApptTodoRecords(i).dTicsOriginal) + (ApptGV.All_ApptTodoRecords(i).dTics Mod TimeSpan.TicksPerSecond)
+                'If .L <> LL Then
+                '    MsgBox(i & "stop")
+                'End If
+                'or
+                '.L = getFirstOfMonthTicks(ApptGV.All_ApptTodoRecords(i).dTicsOriginal) + (ApptGV.All_ApptTodoRecords(i).dTics Mod TimeSpan.TicksPerSecond)
+
+                'TimeSpan.
+
+                .i = i 'position in array
+            End With
+            'Debug.Print(cnt & " " & formatApptTodoDateStr(ApptGV.TodoCreateDate(i).L) & " " & ApptGV.TodoCreateDate(i).i & " " & ApptGV.All_ApptTodoRecords(ApptGV.TodoCreateDate(i).i).DeleteFlag & " " & ApptGV.All_ApptTodoRecords(ApptGV.TodoCreateDate(i).i).Msg)
+            'MsgBox(i & "stop")
+        Next
+        QuickSort_LongInteger_Long(ApptGV.TodoCompletedDate, 1, cnt)
+
+        'For i = cnt To cnt - 8 Step -1
+        '    Debug.Print(i & " " & formatApptTodoDateStr(ApptGV.TodoCreateDate(i).L) & " " & ApptGV.TodoCreateDate(i).i & " " & ApptGV.All_ApptTodoRecords(ApptGV.TodoCreateDate(i).i).DeleteFlag & " " & ApptGV.All_ApptTodoRecords(ApptGV.TodoCreateDate(i).i).Msg)
+        'Next
+
+        'For i = 1 To cnt
+        '    'For i = 8090 To 8110
+        '    '    'Debug.Print(New Date(ApptGV.TodoCreateDate(i).L) & " " & ApptGV.TodoCreateDate(i).i & " " & ApptGV.All_ApptTodoRecords(ApptGV.TodoCreateDate(i).i).Msg)
+        '    Dim newMsg As String = Replace(ApptGV.All_ApptTodoRecords(ApptGV.TodoCompletedDate(i).i).Msg, vbNewLine, "/")
+        '    Debug.Print(i & " " & formatApptTodoDateStr(ApptGV.TodoCompletedDate(i).L) & " " & ApptGV.TodoCompletedDate(i).i & " " & ApptGV.All_ApptTodoRecords(ApptGV.TodoCompletedDate(i).i).DeleteFlag & " " & newMsg)
+        'Debug.Print(i & " " & ApptGV.TodoCompletedDate(i).L & " " & ApptGV.TodoCompletedDate(i).i & " " & ApptGV.All_ApptTodoRecords(ApptGV.TodoCompletedDate(i).i).Msg)
+        'Next
+        'endTime()
+    End Sub
     Function getAll_ApptTodoRecordType_UsingReader() As ApptTodoRecordType()
 
         Dim cnt As Integer = 0
@@ -1871,6 +2051,14 @@ Module M_ListMgt_Files
 
         Return rec
     End Function
+    Sub putApptTodoRecord(ByVal Rec As ApptTodoRecordType)
+        Dim id As Integer = Rec.ID
+        Dim ff As Integer = FreeFile()
+        Dim filename As String = xBuildFullFileName(file_ListMgt.FileName)
+        FileOpen(ff, filename, OpenMode.Random, , , file_ListMgt.FileLen)
+        FilePut(ff, Rec, id)
+        FileClose(ff)
+    End Sub
     Sub test_ReadAllRecordsAndBuildExtermalArray()
         startTime()
         ReadAllRecordsAndBuildExtermalArray()
@@ -2070,6 +2258,29 @@ Module M_ListMgt_Files
         Return low
 
     End Function
+    Function biSearch_GTE_TodoCompletedDates(ByVal search As Long) As Integer ', Optional ByVal USEi As Boolean = False) As Integer
+        If ApptGV.TodoCompletedDate.Count = 1 Then Return 0
+
+        'Dim HH As Integer = UBound(a)
+        Dim high As Integer = UBound(ApptGV.TodoCompletedDate) 'HH
+        Dim low As Integer = 1
+        Dim half As Integer
+
+        'If USEi = False Then
+        Do
+            half = (high + low) \ 2
+            'Debug.Print(New Date(ApptGV.TodoCreateDate(half).L))
+            If search > ApptGV.TodoCompletedDate(half).L Then low = half + 1 Else high = half - 1 ' if f > arrayItem 
+        Loop Until low > high
+        'Else
+        '    Do
+        '        half = (high + low) \ 2
+        '        If search > (ApptGV.LongType(half) Mod TimeSpan.TicksPerSecond) Then low = half + 1 Else high = half - 1 ' if f > arrayItem 
+        '    Loop Until low > high
+        'End If
+        Return low
+
+    End Function
     Function biSearch_GTE_LongType(ByVal search As Long, Optional ByVal USEi As Boolean = False) As Integer
         'This function only works on Appt and Todos and bdays (not recur)
         'from: biSearch_GTE_LongInteger 10/23/2015
@@ -2259,14 +2470,17 @@ Module M_ListMgt_Files
 
         '/ListMgt/
         Public Shared ccPath As String = "C:\todoProgramCOM2020ListMgt"
+        Public Shared nameOfFileSet_BeingUsed As String = ""
         '=========
+        Public Shared fontSize As Integer
+
 
 
         '        Public Shared aPathOld As String 'remmed out 5/14/2015
         '        Public Shared aPathNew As String 'remmed out 5/14/2015
 
-        Public Shared ccPathBackUp As String = "c:\backup\"
-        Public Shared BackUpPath As String = ""
+        'Public Shared ccPathBackUp As String = "c:\backup\"
+        'Public Shared BackUpPath As String = ""
 
         'Public Shared ccPath As String = "N:\DTfiles\DTcodeTest\myFileSystem\1\"
 
@@ -2364,6 +2578,7 @@ Module M_ListMgt_Files
         Public Shared TodoDistinctDates_Cnt As Integer
         Public Shared todoTicks As Long = 1262304000000000 '1/1/0005'
         Public Shared TodoCreateDate() As LongIntegerType
+        Public Shared TodoCompletedDate() As LongIntegerType
 
 
 

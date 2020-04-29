@@ -46,6 +46,8 @@ Module Mod_FileSystem_ListMgt
             'create One
             'Dim di As Directory = System.IO.Directory.CreateDirectory(DirName)
             System.IO.Directory.CreateDirectory(DirName)
+
+
         End If
 
     End Sub
@@ -83,5 +85,21 @@ Module Mod_FileSystem_ListMgt
         End If
         Return Ret
     End Function
+    Sub SaveTotoRecords2Disk(ByRef a() As ApptTodoRecordType)
+        Dim nRecs As Integer = UBound(a)
+        Dim i As Integer
+
+        Dim ff As Integer = FreeFile()
+        Dim filename As String = xBuildFullFileName(file_ListMgt.FileName)
+        FileOpen(ff, filename, OpenMode.Random, , , file_ListMgt.FileLen)
+
+        Dim xLocation As Integer
+        For i = 0 To nRecs
+            xLocation = a(i).ID
+            FilePut(ff, a(i), xLocation)
+        Next
+
+        FileClose(ff)
+    End Sub
 
 End Module
